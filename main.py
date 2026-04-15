@@ -8,17 +8,13 @@ from aiogram.types import Message, CallbackQuery
 from aiogram.utils.keyboard import ReplyKeyboardBuilder, InlineKeyboardBuilder
 from aiogram.filters.command import Command
 
-# Токен бота
-TOKEN = "8554026235:AAFWr7P42yvLqtgxvrY1l_1q04Nnplv8c9I"
+TOKEN = ""
 
-
-# ========== НАСТРОЙКА БАЗЫ ДАННЫХ ==========
 def init_db():
     """Инициализация базы данных"""
     conn = sqlite3.connect('bot.db')
     cursor = conn.cursor()
 
-    # Исправлено: prymary -> primary
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS users(
         id INTEGER PRIMARY KEY,
@@ -38,10 +34,9 @@ def add_user(user_id, username, full_name):
         conn = sqlite3.connect('bot.db')
         cursor = conn.cursor()
 
-        # Проверяем, есть ли уже такой пользователь
         cursor.execute("SELECT id FROM users WHERE id = ?", (user_id,))
         if cursor.fetchone() is None:
-            # Добавляем нового пользователя
+
             cursor.execute(
                 "INSERT INTO users (id, username, full_name) VALUES (?, ?, ?)",
                 (user_id, username, full_name)
@@ -57,24 +52,23 @@ def add_user(user_id, username, full_name):
         conn.close()
 
 
-# Инициализируем БД при запуске
+
 init_db()
 
-# СОЗДАНИЕ КЛАВИАТУР
-# Reply клавиатура (обычные кнопки)
+
 reply_builder = ReplyKeyboardBuilder()
 reply_builder.button(text="/start")
 reply_builder.button(text="/help")
 reply_builder.adjust(1)
 reply_kb = reply_builder.as_markup(resize_keyboard=True)
 
-# Inline клавиатура (кнопки под сообщением)
+
 builder = InlineKeyboardBuilder()
 builder.button(text=" Каталог", callback_data="catalog")
 builder.button(text=" Помощь", callback_data="help_realtors")
 builder.button(text=" Жалоба", callback_data="complaint")
 builder.button(text=" Предложения", callback_data="suggestions")
-builder.adjust(1)  # по одной кнопке в ряд
+builder.adjust(1)
 inline_kb = builder.as_markup()
 
 dp = Dispatcher()
@@ -88,10 +82,10 @@ async def command_start_handler(message: Message) -> None:
     username = message.from_user.username
     full_name = message.from_user.full_name
 
-    # Сохраняем пользователя в БД
+
     add_user(user_id, username, full_name)
 
-    # Приветственное сообщение
+
     await message.answer(
         f"Привет, {full_name}! 👋\n\n"
         "Я Риэлтор бот. Я помогу вам найти "
@@ -121,17 +115,17 @@ async def command_help_handler(message: Message) -> None:
     await message.answer(help_text, parse_mode="Markdown")
 
 
-#  ОБРАБОТЧИКИ INLINE КНОПОК
+
 @dp.callback_query(F.data == "catalog")
 async def catalog_handler(callback: CallbackQuery) -> None:
-    # Обязательно отвечаем на callback
+
     await callback.answer("Открываю каталог...")
 
-    # Создаем кнопку "Назад" для возврата в главное меню
+
     back_builder = InlineKeyboardBuilder()
     back_builder.button(text="◀️ Назад в меню", callback_data="back_to_menu")
 
-    # Отправляем новое сообщение с каталогом
+
     catalog_text = """
     📚 *Каталог недвижимости*
 
@@ -181,7 +175,6 @@ async def help_handler(callback: CallbackQuery) -> None:
 async def complaint_handler(callback: CallbackQuery) -> None:
     await callback.answer("Форма жалобы")
 
-    # Создаем клавиатуру для выбора типа жалобы
     complaint_builder = InlineKeyboardBuilder()
     complaint_builder.button(text=" На риэлтора", callback_data="complaint_realtor")
     complaint_builder.button(text=" На объект", callback_data="complaint_property")
@@ -214,10 +207,9 @@ async def back_to_menu_handler(callback: CallbackQuery) -> None:
     """Возврат в главное меню"""
     await callback.answer("Возврат в меню")
 
-    # Удаляем текущее сообщение
     await callback.message.delete()
 
-    # Отправляем главное меню
+
     await callback.message.answer(
         "🏠 *Главное меню*\n\nВыберите действие:",
         parse_mode="Markdown",
@@ -225,7 +217,7 @@ async def back_to_menu_handler(callback: CallbackQuery) -> None:
     )
 
 
-# Обработчики для подкатегорий жалоб
+
 @dp.callback_query(F.data.startswith("complaint_"))
 async def complaint_type_handler(callback: CallbackQuery) -> None:
     complaint_type = callback.data.split("_")[1]
@@ -252,7 +244,7 @@ async def complaint_type_handler(callback: CallbackQuery) -> None:
             "Извините за доставленные неудобства! "
         )
 
-    # Кнопка "Вернуться в меню"
+
     back_builder = InlineKeyboardBuilder()
     back_builder.button(text="◀️ Вернуться в меню", callback_data="back_to_menu")
 
@@ -261,7 +253,7 @@ async def complaint_type_handler(callback: CallbackQuery) -> None:
     )
 
 
-# ========== ЗАПУСК БОТА ==========
+
 async def main() -> None:
     bot = Bot(token=TOKEN)
     await dp.start_polling(bot)
